@@ -1,0 +1,136 @@
+{
+  "__type": "FindItemJsonRequest:#Exchange",
+  "Header": {
+    "__type": "JsonRequestHeaders:#Exchange",
+    "RequestServerVersion": "Exchange2013",
+    "TimeZoneContext": {
+      "__type": "TimeZoneContext:#Exchange",
+      "TimeZoneDefinition": {
+        "__type": "TimeZoneDefinitionType:#Exchange",
+        "Id": "Greenwich Standard Time"
+      }
+    }
+  },
+  "Body": {
+    "__type": "FindItemRequest:#Exchange",
+    "ItemShape": {
+      "__type": "ItemResponseShape:#Exchange",
+      "BaseShape": "IdOnly",
+      "AdditionalProperties": [
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "ItemParentId"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "Sensitivity"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "AppointmentState"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "IsCancelled"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "HasAttachments"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "LegacyFreeBusyStatus"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "CalendarItemType"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "Start"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "End"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "IsAllDayEvent"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "Organizer"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "Subject"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "IsMeeting"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "UID"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "InstanceKey"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "ItemEffectiveRights"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "JoinOnlineMeetingUrl"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "ConversationId"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "CalendarIsResponseRequested"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "Categories"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "IsRecurring"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "IsOrganizer"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "EnhancedLocation"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "IsSeriesCancelled"
+        },
+        {
+          "__type": "PropertyUri:#Exchange",
+          "FieldURI": "Charm"
+        }
+      ]
+    },
+    "ParentFolderIds": [
+      {
+        "__type": "FolderId:#Exchange",
+        "Id": "AQMkADIxM2MwYzIxLTY4OTYtNGJmMS05NGEzLTQ2MTQ4ZDg4AGE1OTMALgAAA+KotTVREsNCtmK/xnwMPUYBAHidF9jGAEZDtfW4y7cKk8kAAAIBDQAAAA==",
+        "ChangeKey": "AgAAAA=="
+      }
+    ],
+    "Traversal": "Shallow",
+    "Paging": {
+      "__type": "CalendarPageView:#Exchange",
+      "StartDate": "%sT00:00:00.001",
+      "EndDate": "%sT00:00:00.000"
+    }
+  }
+}
