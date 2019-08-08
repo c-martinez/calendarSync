@@ -16,11 +16,7 @@ config.read(config_filename)
 BUFFER_CALENDAR_ID = config.get('default', 'BUFFER_CALENDAR_ID')   # TMP CALENDAR
 SYNC_CALENDAR_ID = config.get('default', 'SYNC_CALENDAR_ID') # ESCIENCE CALENDAR
 
-print(BUFFER_CALENDAR_ID)
-
 def getGoogleEvents(fromDate, toDate):
-    # TODO: Change calendar ID ?
-    # Calendar ID
     events = getGEvents(BUFFER_CALENDAR_ID, fromDate, toDate)
     events += getGEvents(SYNC_CALENDAR_ID, fromDate, toDate)
     return events
@@ -59,7 +55,12 @@ def printEvents(title, events):
 
 
 def getEventHash(event):
-    start = dateparse(event['start']).astimezone().isoformat()
+    try:
+        startParsed = dateparse(event['start'])
+        start = startParsed.astimezone().isoformat()
+    except:
+        startParsed = dateparse(event['start'] + 'T00:00:00Z')
+        start = startParsed.astimezone().isoformat()
     return start + ': ' + event['title']
 
 def getNonOverlapingEvents(sourceEvents, targetEvents, debug=False):
@@ -104,7 +105,8 @@ def syncCalendars():
 
     # Add newEvents to google calendar
     for e in newEvents:
-        insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'])
+        print('Creating event: %s'%getEventHash(e))
+        # insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'])
         pass
 
     # Remove delEvents from google calendar
@@ -115,5 +117,54 @@ def syncCalendars():
         except:
             print('Cannot deleve event: ' + e['start'] + ': ' + e['title'])
 
+def copyToPivotCalendar():
+    fromDate = getStartDate()
+    toDate = getEndDate()
+
+    # fetch outlook calendar as list of events: oEvents
+    oEvents = getOutlookEvents(fromDate, toDate)
+    oEvents = [ normalizeOEvent(e) for e in oEvents ]
+    printEvents('oEvents', oEvents)
+
+    # fetch google calendar as list of events : gEvents
+    # gEvents = getGoogleEvents(fromDate, toDate)
+    gEvents = getGEvents(BUFFER_CALENDAR_ID, fromDate, toDate)
+    gEvents = [ normalizeGEvent(e) for e in gEvents ]
+    printEvents('gEvents', gEvents)
+
+    oEventDict = { getEventHash(e): e for e in oEvents }
+    gEventDict = { getEventHash(e): e for e in gEvents }
+
+    oEventSet = set(oEventDict.keys())
+    gEventSet = set(gEventDict.keys())
+
+    newEvents = oEventSet - gEventSet
+    delEvents = gEventSet - oEventSet
+
+    print('========================================')
+    print('===  INSERTING EVENTS ==================')
+    print('========================================')
+    # Add newEvents to google calendar
+    for eKey in newEvents:
+        e = oEventDict[eKey]
+        print('Creating event: %s'%getEventHash(e))
+        insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'])
+        pass
+
+    print('========================================')
+    print('===  DELETING EVENTS ==================')
+    print('========================================')
+    # Remove delEvents from google calendar
+    for eKey in delEvents:
+        e = gEventDict[eKey]
+        try:
+            print('Deleting event: %s'%getEventHash(e))
+            deleteCalendarEvent(BUFFER_CALENDAR_ID, e['id'])
+            pass
+        except:
+            print('Cannot deleve event: ' + e['start'] + ': ' + e['title'])
+
+
 if __name__ == '__main__':
-    syncCalendars()
+    # syncCalendars()
+    copyToPivotCalendar()

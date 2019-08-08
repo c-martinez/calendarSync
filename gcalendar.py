@@ -43,7 +43,8 @@ def getCalendarEvents(calendarId, startDate, endDate):
     startDateStr = startDate.isoformat() + 'Z' # 'Z' indicates UTC time
     endDateStr = endDate.isoformat() + 'Z' # 'Z' indicates UTC time
 
-    events_result = service.events().list(calendarId=calendarId, timeMin=startDateStr,
+    events_result = service.events().list(calendarId=calendarId,
+                                        timeMin=startDateStr,
                                         timeMax=endDateStr,
                                         singleEvents=True,
                                         orderBy='startTime').execute()
@@ -69,3 +70,4 @@ def insertCalendarEvent(calendarId, title, startDate, endDate):
 def deleteCalendarEvent(calendarId, eventId):
     service = getService()
     service.events().delete(calendarId=calendarId, eventId=eventId).execute()
+    print('Event deleted: %s'%eventId)

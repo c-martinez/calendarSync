@@ -1,9 +1,12 @@
-from datetime import datetime, timedelta
+from datetime import date, time, datetime, timedelta
+
+def startOfToday():
+    return datetime.combine(date.today(), time())
 
 def getStartDate():
     # return "2017-04-03"
-    return datetime.now()
+    return (startOfToday() - timedelta(days=30))
 
 def getEndDate():
     # return "2017-04-04"
-    return (datetime.now() + timedelta(days=30))
+    return (startOfToday() + timedelta(days=30))
