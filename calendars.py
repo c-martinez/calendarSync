@@ -1,13 +1,28 @@
+"""Calendar sync.
+
+Usage:
+  calendars.py (--days | --weeks | --months | --years) [--dry-run]
+
+Options:
+  --days       Sync calendars 7 days before & after today..
+  --weeks      Sync calendars 4 weeks before & after today..
+  --months     Sync calendars 3 months before & after today.
+  --years      Sync calendars one year before & after today.
+  --dry-run    Show events to be created / deleted without actually creating them.
+
+"""
+from configparser import SafeConfigParser
+from docopt import docopt
+from datetime import timedelta
+from dateutil.relativedelta import relativedelta
+from dateutil.parser import parse as dateparse
+
+
 from utils import getStartDate, getEndDate
 from gcalendar import getCalendarEvents as getGEvents
 from gcalendar import insertCalendarEvent, deleteCalendarEvent
 from mscalendar import getCalendarEvents as getMSEvents
-from dateutil.parser import parse as dateparse
 
-try:
-    from ConfigParser import SafeConfigParser
-except:
-    from configparser import SafeConfigParser
 
 config = SafeConfigParser()
 config_filename = 'config.ini'
@@ -117,20 +132,20 @@ def syncCalendars():
         except:
             print('Cannot deleve event: ' + e['start'] + ': ' + e['title'])
 
-def copyToPivotCalendar():
-    fromDate = getStartDate()
-    toDate = getEndDate()
+def copyToPivotCalendar(deltaT, dryrun=False):
+    fromDate = getStartDate(deltaT)
+    toDate = getEndDate(deltaT)
+    print('Sync period: {startDate:%Y-%m-%d} - {endDate:%Y-%m-%d}'.format(startDate=fromDate, endDate=toDate))
 
     # fetch outlook calendar as list of events: oEvents
     oEvents = getOutlookEvents(fromDate, toDate)
     oEvents = [ normalizeOEvent(e) for e in oEvents ]
-    printEvents('oEvents', oEvents)
+    # printEvents('oEvents', oEvents)
 
     # fetch google calendar as list of events : gEvents
-    # gEvents = getGoogleEvents(fromDate, toDate)
     gEvents = getGEvents(BUFFER_CALENDAR_ID, fromDate, toDate)
     gEvents = [ normalizeGEvent(e) for e in gEvents ]
-    printEvents('gEvents', gEvents)
+    # printEvents('gEvents', gEvents)
 
     oEventDict = { getEventHash(e): e for e in oEvents }
     gEventDict = { getEventHash(e): e for e in gEvents }
@@ -148,8 +163,8 @@ def copyToPivotCalendar():
     for eKey in newEvents:
         e = oEventDict[eKey]
         print('Creating event: %s'%getEventHash(e))
-        insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'])
-        pass
+        if not dryrun:
+            insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'])
 
     print('========================================')
     print('===  DELETING EVENTS ==================')
@@ -159,12 +174,23 @@ def copyToPivotCalendar():
         e = gEventDict[eKey]
         try:
             print('Deleting event: %s'%getEventHash(e))
-            deleteCalendarEvent(BUFFER_CALENDAR_ID, e['id'])
-            pass
+            if not dryrun:
+                deleteCalendarEvent(BUFFER_CALENDAR_ID, e['id'])
         except:
             print('Cannot deleve event: ' + e['start'] + ': ' + e['title'])
 
 
+def _buildDeltaT(opts):
+    if opts['--days']:
+        return timedelta(days=7)
+    if opts['--weeks']:
+        return timedelta(weeks=4)
+    if opts['--months']:
+        return relativedelta(months=3)
+    if opts['--years']:
+        return relativedelta(years=1)
+
 if __name__ == '__main__':
-    # syncCalendars()
-    copyToPivotCalendar()
+    opts = docopt(__doc__, version='Calendar Sync 1.0')
+    deltaT = _buildDeltaT(opts)
+    copyToPivotCalendar(dryrun=opts['--dry-run'], deltaT=deltaT)
