@@ -35,7 +35,7 @@ def getService():
 
 def getCalendarEvents(calendarId, startDate, endDate):
     """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
+    Prints the start and name of the next N events on the user's calendar.
     """
     service = getService()
 
@@ -43,15 +43,23 @@ def getCalendarEvents(calendarId, startDate, endDate):
     startDateStr = startDate.isoformat() + 'Z' # 'Z' indicates UTC time
     endDateStr = endDate.isoformat() + 'Z' # 'Z' indicates UTC time
 
-    events_result = service.events().list(calendarId=calendarId,
-                                        timeMin=startDateStr,
-                                        timeMax=endDateStr,
-                                        singleEvents=True,
-                                        orderBy='startTime').execute()
-    events = events_result.get('items', [])
+    pageToken = None
+    events = []
+    while True:
+        events_result = service.events().list(calendarId=calendarId,
+                                            timeMin=startDateStr,
+                                            timeMax=endDateStr,
+                                            singleEvents=True,
+                                            pageToken=pageToken,
+                                            orderBy='startTime').execute()
+        eventsPage = events_result.get('items', [])
+        events += eventsPage
+        pageToken = events_result.get('nextPageToken')
+        if not pageToken:
+            break
     return events
 
-def insertCalendarEvent(calendarId, title, startDate, endDate):
+def insertCalendarEvent(calendarId, title, startDate, endDate, location):
     event = {
         'summary': title,
         'description': title + '\nImported event.',
@@ -62,6 +70,10 @@ def insertCalendarEvent(calendarId, title, startDate, endDate):
             'dateTime': endDate,
         }
     }
+    if location:
+        event['location'] = location
+    else:
+        print('NoLocation: ' + title)
 
     service = getService()
     event = service.events().insert(calendarId=calendarId, body=event).execute()

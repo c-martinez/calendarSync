@@ -1,7 +1,7 @@
 """Calendar sync.
 
 Usage:
-  calendars.py (--days | --weeks | --months | --years) [--dry-run]
+  calendars.py (--days | --weeks | --months | --years) [--dry-run] [--flush]
 
 Options:
   --days       Sync calendars 7 days before & after today..
@@ -9,9 +9,9 @@ Options:
   --months     Sync calendars 3 months before & after today.
   --years      Sync calendars one year before & after today.
   --dry-run    Show events to be created / deleted without actually creating them.
-
+  --flush      Instead of sync, removes duplicates in google calendar.
 """
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 from docopt import docopt
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
@@ -24,7 +24,7 @@ from gcalendar import insertCalendarEvent, deleteCalendarEvent
 from mscalendar import getCalendarEvents as getMSEvents
 
 
-config = SafeConfigParser()
+config = ConfigParser()
 config_filename = 'config.ini'
 config.read(config_filename)
 
@@ -45,6 +45,7 @@ def normalizeOEvent(event):
         'title': event['title'],
         'start': event['start'],
         'end': event['end'],
+        'location': event['location']
     }
 
 def getDateTime(eventTime):
@@ -94,43 +95,37 @@ def getNonOverlapingEvents(sourceEvents, targetEvents, debug=False):
 
     return newEvents
 
-def syncCalendars():
-    fromDate = getStartDate()
-    toDate = getEndDate()
-
-    # fetch outlook calendar as list of events: oEvents
-    oEvents = getOutlookEvents(fromDate, toDate)
-    oEvents = [ normalizeOEvent(e) for e in oEvents ]
-    printEvents('oEvents', oEvents)
+def deleteDuplicates(deltaT, dryrun=False):
+    fromDate = getStartDate(deltaT)
+    toDate = getEndDate(deltaT)
+    print('Sync period: {startDate:%Y-%m-%d} - {endDate:%Y-%m-%d}'.format(startDate=fromDate, endDate=toDate))
 
     # fetch google calendar as list of events : gEvents
-    gEvents = getGoogleEvents(fromDate, toDate)
+    gEvents = getGEvents(BUFFER_CALENDAR_ID, fromDate, toDate)
     gEvents = [ normalizeGEvent(e) for e in gEvents ]
     printEvents('gEvents', gEvents)
 
-    # Check all events on oEvents are in gEvents
-    #   rather check events on oEvents which are not in gEvents
-    #   and save them as newEvents
-    newEvents = getNonOverlapingEvents(gEvents, oEvents, debug=False)
-    printEvents('newEvents', newEvents)
-
-    # Check all events on gEvents are still in oEvents (remove cancelations)
-    delEvents = getNonOverlapingEvents(oEvents, gEvents)
-    printEvents('delEvents', delEvents)
-
-    # Add newEvents to google calendar
-    for e in newEvents:
-        print('Creating event: %s'%getEventHash(e))
-        # insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'])
-        pass
-
+    uniqueEventHashes = []
+    delEvents = []
+    for event in gEvents:
+        eHash = getEventHash(event)
+        if eHash in uniqueEventHashes:
+            delEvents.append(event)
+        else:
+            uniqueEventHashes.append(eHash)
+            
+    print('========================================')
+    print('===  DELETING EVENTS ==================')
+    print('========================================')
     # Remove delEvents from google calendar
     for e in delEvents:
         try:
-            deleteCalendarEvent(BUFFER_CALENDAR_ID, e['id'])
-            pass
+            print('Deleting event: %s'%getEventHash(e))
+            if not dryrun:
+                deleteCalendarEvent(BUFFER_CALENDAR_ID, e['id'])
         except:
             print('Cannot deleve event: ' + e['start'] + ': ' + e['title'])
+
 
 def copyToPivotCalendar(deltaT, dryrun=False):
     fromDate = getStartDate(deltaT)
@@ -164,7 +159,7 @@ def copyToPivotCalendar(deltaT, dryrun=False):
         e = oEventDict[eKey]
         print('Creating event: %s'%getEventHash(e))
         if not dryrun:
-            insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'])
+            insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'], e['location'])
 
     print('========================================')
     print('===  DELETING EVENTS ==================')
@@ -193,4 +188,7 @@ def _buildDeltaT(opts):
 if __name__ == '__main__':
     opts = docopt(__doc__, version='Calendar Sync 1.0')
     deltaT = _buildDeltaT(opts)
-    copyToPivotCalendar(dryrun=opts['--dry-run'], deltaT=deltaT)
+    if opts['--flush']:
+        deleteDuplicates(dryrun=opts['--dry-run'], deltaT=deltaT)
+    else:
+        copyToPivotCalendar(dryrun=opts['--dry-run'], deltaT=deltaT)

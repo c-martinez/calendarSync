@@ -24,7 +24,8 @@ def getCalendarEvents(startDate, endDate):
             'id'        : event['ItemId']['Id'],
             'start'     : event['Start'],
             'end'       : event['End'],
-            'title'     : event['Subject']
+            'title'     : event['Subject'] if 'Subject' in event else 'None',
+            'location'  : event['Location']['DisplayName']
         }
         calData.append(calEvent)
 
