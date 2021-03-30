@@ -28,13 +28,7 @@ config = ConfigParser()
 config_filename = 'config.ini'
 config.read(config_filename)
 
-BUFFER_CALENDAR_ID = config.get('default', 'BUFFER_CALENDAR_ID')   # TMP CALENDAR
-SYNC_CALENDAR_ID = config.get('default', 'SYNC_CALENDAR_ID') # ESCIENCE CALENDAR
-
-def getGoogleEvents(fromDate, toDate):
-    events = getGEvents(BUFFER_CALENDAR_ID, fromDate, toDate)
-    events += getGEvents(SYNC_CALENDAR_ID, fromDate, toDate)
-    return events
+ESCIENCE_CALENDAR_ID = config.get('default', 'ESCIENCE_CALENDAR_ID')   # ESCIENCE CALENDAR
 
 def getOutlookEvents(fromDate, toDate):
     return getMSEvents(fromDate, toDate)
@@ -47,6 +41,14 @@ def normalizeOEvent(event):
         'end': event['end'],
         'location': event['location']
     }
+
+def normalizeOEvents(events):
+    normEvents = []
+    for e in events:
+        e = normalizeOEvent(e)
+        if not e['title'].startswith('Private'):
+            normEvents.append(e)
+    return normEvents
 
 def getDateTime(eventTime):
     try:
@@ -62,6 +64,9 @@ def normalizeGEvent(event):
         'start': getDateTime(event['start']),
         'end': getDateTime(event['end']),
     }
+
+def normalizeGEvents(gEvents):
+    return [ normalizeGEvent(e) for e in gEvents ]
 
 def printEvents(title, events):
     print(title + ':')
@@ -101,8 +106,8 @@ def deleteDuplicates(deltaT, dryrun=False):
     print('Sync period: {startDate:%Y-%m-%d} - {endDate:%Y-%m-%d}'.format(startDate=fromDate, endDate=toDate))
 
     # fetch google calendar as list of events : gEvents
-    gEvents = getGEvents(BUFFER_CALENDAR_ID, fromDate, toDate)
-    gEvents = [ normalizeGEvent(e) for e in gEvents ]
+    gEvents = getGEvents(ESCIENCE_CALENDAR_ID, fromDate, toDate)
+    gEvents = normalizeGEvents(gEvents)
     printEvents('gEvents', gEvents)
 
     uniqueEventHashes = []
@@ -113,7 +118,7 @@ def deleteDuplicates(deltaT, dryrun=False):
             delEvents.append(event)
         else:
             uniqueEventHashes.append(eHash)
-            
+
     print('========================================')
     print('===  DELETING EVENTS ==================')
     print('========================================')
@@ -122,7 +127,7 @@ def deleteDuplicates(deltaT, dryrun=False):
         try:
             print('Deleting event: %s'%getEventHash(e))
             if not dryrun:
-                deleteCalendarEvent(BUFFER_CALENDAR_ID, e['id'])
+                deleteCalendarEvent(ESCIENCE_CALENDAR_ID, e['id'])
         except:
             print('Cannot deleve event: ' + e['start'] + ': ' + e['title'])
 
@@ -134,12 +139,12 @@ def copyToPivotCalendar(deltaT, dryrun=False):
 
     # fetch outlook calendar as list of events: oEvents
     oEvents = getOutlookEvents(fromDate, toDate)
-    oEvents = [ normalizeOEvent(e) for e in oEvents ]
+    oEvents = normalizeOEvents(oEvents)
     # printEvents('oEvents', oEvents)
 
     # fetch google calendar as list of events : gEvents
-    gEvents = getGEvents(BUFFER_CALENDAR_ID, fromDate, toDate)
-    gEvents = [ normalizeGEvent(e) for e in gEvents ]
+    gEvents = getGEvents(ESCIENCE_CALENDAR_ID, fromDate, toDate)
+    gEvents = normalizeGEvents(gEvents)
     # printEvents('gEvents', gEvents)
 
     oEventDict = { getEventHash(e): e for e in oEvents }
@@ -159,7 +164,7 @@ def copyToPivotCalendar(deltaT, dryrun=False):
         e = oEventDict[eKey]
         print('Creating event: %s'%getEventHash(e))
         if not dryrun:
-            insertCalendarEvent(BUFFER_CALENDAR_ID, e['title'], e['start'], e['end'], e['location'])
+            insertCalendarEvent(ESCIENCE_CALENDAR_ID, e['title'], e['start'], e['end'], e['location'])
 
     print('========================================')
     print('===  DELETING EVENTS ==================')
@@ -170,7 +175,7 @@ def copyToPivotCalendar(deltaT, dryrun=False):
         try:
             print('Deleting event: %s'%getEventHash(e))
             if not dryrun:
-                deleteCalendarEvent(BUFFER_CALENDAR_ID, e['id'])
+                deleteCalendarEvent(ESCIENCE_CALENDAR_ID, e['id'])
         except:
             print('Cannot deleve event: ' + e['start'] + ': ' + e['title'])
 
